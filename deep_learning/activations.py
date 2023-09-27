@@ -5,6 +5,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class Identity(ABC):
+    def __init__(self):
+        super().__init__()
+
+    def __str__(self):
+        return "Identity"
+
+    def __call__(self, z):
+        return self.forward(z)
+
+    def forward(self, z):
+        return z
+
+    def grad(self, z):
+        return np.ones_like(z, dtype=np.float64)
 
 class Sigmoid(ABC):
     def __init__(self, **kwargs):
