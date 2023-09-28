@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 from activations import *
 
-SEED = 520
+SEED = 1314
 
 class LinearLayer(ABC):
     def __init__(self, in_dim, out_dim):
@@ -44,10 +44,13 @@ class LinearLayer(ABC):
 
         return self.Z
 
-    def backward(self, dLdY, dLdZ, act_func=None):
+    def backward(self, dLdY, act_func=None):
         '''
-        dLdY: 前一层额dLdY
-        dLdZ: 前一层的dLdZ
+        dLdY : np.ndarry
+            前一层额dLdY
+            由后一层计算得到
+        act_func : Activation Function
+            激活函数
         '''
         X = self.X
         Z = self.Z
@@ -57,16 +60,16 @@ class LinearLayer(ABC):
         if act_func is None:
             act_func = Identity()
 
-        dW = []
-        db = []
-        dZ = np.zeros((batch, self.out_dim), dtype=np.float64)
-        dY = np.zeros((batch, self.in_dim), dtype=np.float64)
         W = self.parameters["W"]
         b = self.parameters["b"]
+        dW = [] # 当前层的Weight梯度
+        db = [] # 当前层的Bias梯度
+        dY = [] # 前一层的dLdY
+        dZ = [] # 当前层的dLdZ
         for ba in range(batch):
-            dW.append(dLdY[ba,:].reshape(1, -1) * np.tile(X[ba,:].reshape(-1, 1), self.out_dim))
-            db.append(dLdY[ba,:].reshape(1, -1) * np.ones_like(b, dtype=np.float64))
-
-            dZ[ba, :] = dLdY[ba, :].reshape(1, -1) * act_func.grad(Z[ba, :].reshape(1, -1)) # 当前层的dLdZ
-            dY[ba, :] = (dZ[ba, :] @ W.T).reshape(1, -1) # 当前层的dLdY
-        return dW, db, dZ, dY
+            dLdZ = dLdY[ba, :] * act_func.grad(Z[ba, :])
+            dZ.append(dLdZ)
+            dW.append(dLdZ * np.tile(X[ba,:].reshape(-1, 1), self.out_dim))
+            db.append(dLdZ * np.ones_like(b, dtype=np.float64))
+            dY.append(dLdZ @ W.T)
+        return dW, db, np.array(dY, dtype=np.float64), dZ
