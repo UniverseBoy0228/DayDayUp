@@ -8,3 +8,4 @@
 2. 2023/09/26 更新单个输入样本分别在 1) 单个linear layer； 2) 单个linear layer加Sigmoid函数情况下的backward部分，并做了基础测试
 3. 2023/09/28 增加单位函数的forward和grad部分，更新多个样本在Fully Connected Network中的backward部分，并做了基础测试
 4. 2023/09/30 增加了Fully Connected Network的Forward计算过程，保存为draw.io和pdf文件
+5. 2023/10/08 更新了Fully Connected Network的Backward计算过程，更新文件为fully_connected_neural_network.drawio
