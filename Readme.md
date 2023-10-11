@@ -9,3 +9,4 @@
 3. 2023/09/28 增加单位函数的forward和grad部分，更新多个样本在Fully Connected Network中的backward部分，并做了基础测试
 4. 2023/09/30 增加了Fully Connected Network的Forward计算过程，保存为draw.io和pdf文件
 5. 2023/10/08 更新了Fully Connected Network的Backward计算过程，更新文件为fully_connected_neural_network.drawio
+6. 2023/10/11 更新了Gradient Descent基本运算的实现，更新了Mean Squared Error损失函数的实现，添加了Gradient Descent基本功能的测试函数；新增losses.py，optimiaer.py文件，更新了test.py文件
