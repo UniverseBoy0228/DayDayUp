@@ -5,6 +5,8 @@ import copy
 from activations import *
 from layers import *
 from test_torch import *
+from losses import *
+from optimizer import *
 
 def test_softmax():
     softmax = Softmax()
@@ -139,12 +141,50 @@ def test_fully_connected_network():
     assert_almost_equal(actual=sum_dLdW3, desired=dLdW3, decimal=decimal)
     assert_almost_equal(actual=sum_dLdb3.reshape(1, -1), desired=dLdB3, decimal=decimal)
 
+def test_gradient_descent():
+    linear_layer_1 = LinearLayer(16, 32)
+    activation_1 = Sigmoid()
+    loss_function = MeanSquaredError("mean")
+
+    for i in range(10000):
+        SEED = 100
+        np.random.seed(SEED)
+        X = np.random.randint(10, size=(64, 16)).astype(np.float32)
+        Z1 = linear_layer_1.forward(X)
+        Y1 = activation_1(Z1)
+
+        Y1_actual = np.ones_like(Y1, dtype=np.float32)
+        L = loss_function(Y1, Y1_actual)
+        print(f"Iter {i} Loss: {L}")
+
+        dLdY1 = loss_function.grad(Y1, Y1_actual)
+
+        dLdW, dLdb, dLdY, dLdZ = linear_layer_1.backward(dLdY1, activation_1)
+        sum_dLdW1 = copy.deepcopy(dLdW[0])
+        sum_dLdb1 = copy.deepcopy(dLdb[0])
+        sum_dLdY1 = copy.deepcopy(dLdY[0])
+        sum_dLdZ1 = copy.deepcopy(dLdZ[0])
+        for i in range(1, len(dLdW)):
+            sum_dLdW1 += dLdW[i]
+            sum_dLdb1 += dLdb[i]
+            sum_dLdY1 += dLdY[i]
+            sum_dLdZ1 += dLdZ[i]
+
+        gradients = {
+            "W": sum_dLdW1, 
+            "b": sum_dLdb1
+        }
+
+        gradient_descent = GradientDescentBasic(learning_rate=0.1)
+        gradient_descent.step(linear_layer_1.parameters, gradients)
+
 if __name__ == '__main__':
     # test_softmax()
     # test_sigmoid()
     # test_linear_layer()
     # test_linear_layer_backward()
     # test_non_linear_layer_backward()
-    test_fully_connected_network()
+    # test_fully_connected_network()
+    test_gradient_descent()
 
 
