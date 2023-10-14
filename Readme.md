@@ -10,3 +10,4 @@
 4. 2023/09/30 增加了Fully Connected Network的Forward计算过程，保存为draw.io和pdf文件
 5. 2023/10/08 更新了Fully Connected Network的Backward计算过程，更新文件为fully_connected_neural_network.drawio
 6. 2023/10/11 更新了Gradient Descent基本运算的实现，更新了Mean Squared Error损失函数的实现，添加了Gradient Descent基本功能的测试函数；新增losses.py，optimiaer.py文件，更新了test.py文件
+7. 2023/10/14 新增了ParameterBasic类用于表示可学习参数；新增了ModuleBase类作为Module组件和Neural Network的基类，并重载了class内属性赋值方法，实现了Module可学习参数列表动态记录的过程；实现了ModuleBase的backward方法；增加了相关测试函数。新增parameter.py、model.py，更新了layer.py、test.py
