@@ -7,6 +7,8 @@ from layers import *
 from test_torch import *
 from losses import *
 from optimizer import *
+from model import *
+from parameter import *
 
 def test_softmax():
     softmax = Softmax()
@@ -178,6 +180,66 @@ def test_gradient_descent():
         gradient_descent = GradientDescentBasic(learning_rate=0.1)
         gradient_descent.step(linear_layer_1.parameters, gradients)
 
+def test_module_parameter_register():
+    class TestModule(ModuleBase):
+        def __init__(self):
+            super().__init__()
+            self.linear_layer_1 = LinearLayer(4, 3)
+            self.linear_layer_2 = LinearLayer(3, 5)
+            self.linear_layer_3 = LinearLayer(5, 4)
+
+            self.sigmoid_1 = Sigmoid()
+            self.sigmoid_2 = Sigmoid()
+            self.sigmoid_3 = Sigmoid()
+
+            self.weight = ParameterBasic(np.random.randn(4, 4))
+            self.bias = ParameterBasic(np.random.randn(1, 4))
+
+        def forward(self, X):
+            # out = X @ self.weight.parameter + self.bias.parameter
+            out = self.linear_layer_1(X)
+            out = self.sigmoid_1(out)
+            self._graph.append([self.linear_layer_1, self.sigmoid_1])
+
+            out = self.linear_layer_2(out)
+            out = self.sigmoid_2(out)
+            self._graph.append([self.linear_layer_2, self.sigmoid_2])
+
+            out = self.linear_layer_3(out)
+            out = self.sigmoid_3(out)
+            self._graph.append([self.linear_layer_3, self.sigmoid_3])
+            return out
+
+    test_module = TestModule()
+    X = np.random.randint(10, size=(3, 4)).astype(np.float32)
+    Y = test_module(X)
+    print("Y", Y.shape)
+
+    modules = test_module._modules
+    print("modules", modules)
+    print("---------------------------")
+
+    for m in modules.keys():
+        m_param = modules[m]._parameters
+        for p in m_param.keys():
+            print(p, id(m_param[p]), m_param[p].shape)
+    print("---------------------------")
+
+    all_param = test_module._parameters
+    for p in all_param.keys():
+        print(p, id(all_param[p]), all_param[p].shape)
+    print("---------------------------")
+
+    print("graph", test_module._graph)
+
+    loss_function = MeanSquaredError("mean")
+    Y_actual = np.ones_like(Y, dtype=np.float32)
+    L = loss_function(Y, Y_actual)
+    print("Loss", L)
+
+    test_module.backward(Y, Y_actual, loss_function)
+
+
 if __name__ == '__main__':
     # test_softmax()
     # test_sigmoid()
@@ -185,6 +247,7 @@ if __name__ == '__main__':
     # test_linear_layer_backward()
     # test_non_linear_layer_backward()
     # test_fully_connected_network()
-    test_gradient_descent()
+    # test_gradient_descent()
+    test_module_parameter_register()
 
 
