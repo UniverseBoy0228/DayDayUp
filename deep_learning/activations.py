@@ -35,7 +35,12 @@ class Sigmoid(ABC):
         return self.forward(z)
 
     def forward(self, z):
-        return 1 / (1 + np.exp(-z))
+        # exp(-z)中z是负数的情况很容易引起exp()的值很大导致溢出
+        # 对Sigmoid函数优化，避免出现大数溢出的问题
+        y = z.copy()
+        y[z >= 0] = 1.0 / (1 + np.exp(-z[z >= 0]))
+        y[z < 0] = np.exp(z[z < 0] / (1 + np.exp(z[z < 0])))
+        return y
 
     def forward_basic(self, z):
         if z.ndim == 1:

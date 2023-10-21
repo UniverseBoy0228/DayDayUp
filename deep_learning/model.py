@@ -32,7 +32,14 @@ class ModuleBase(ABC):
             self.register_parameter(name, value) # 记录完实例化的Module组件后，将Module中的参数记录到当前class的_parameters属性中
         elif isinstance(value, ParameterBasic): # 判断value是否是ParameterBasic类型，如果是，则表示当前参数是可学习参数，需要记录到_parameters属性中
             params = self.__dict__['_parameters']
-            params[name] = value.parameter
+            params[name] = value
+        elif isinstance(value, list):
+            for i, v in enumerate(value):
+                if isinstance(v, ModuleBase):
+                    modules = self.__dict__.get('_modules')
+                    modules[name + f'_{i}'] = v
+                    self._module_names = {v: k for k, v in self._modules.items()}
+                    self.register_parameter(name + f'_{i}', v)
         super().__setattr__(name, value) # 做完上述两种情况的操作后再进行真正的赋值操作
 
     def state_dict(self):
