@@ -12,3 +12,4 @@
 6. 2023/10/11 更新了Gradient Descent基本运算的实现，更新了Mean Squared Error损失函数的实现，添加了Gradient Descent基本功能的测试函数；新增losses.py，optimiaer.py文件，更新了test.py文件
 7. 2023/10/14 新增了ParameterBasic类用于表示可学习参数；新增了ModuleBase类作为Module组件和Neural Network的基类，并重载了class内属性赋值方法，实现了Module可学习参数列表动态记录的过程；实现了ModuleBase的backward方法；增加了相关测试函数。新增parameter.py、model.py，更新了layer.py、test.py
 8. 2023/10/21 优化了Sigmoid激活函数出现大数溢出的问题；ModuleBase类中增加了对于Module Sequence参数注册的情况；新增了Convolutional Layer 2D的基本前向传播运算，并做了基础测试。修改了activations.py、modle.py、layers.py
+9. 2023/10/25 更新了Tanh激活函数的内容，修改了activations.py文件
