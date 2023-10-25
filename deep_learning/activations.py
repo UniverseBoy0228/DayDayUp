@@ -62,6 +62,27 @@ class Sigmoid(ABC):
         f_z = self.forward(z)
         return f_z * (1 - f_z)
 
+class Tanh(ABC):
+    def __init__(self, **kwargs):
+        super().__init__()
+
+    def __str__(self):
+        return "Tanh"
+
+    def __call__(self, z):
+        return self.forward(z)
+
+    def forward(self, z):
+        return np.tanh(z)
+
+    def grad(self, z):
+        return 1.0 / np.tanh(z) ** 2
+
+    def forward_basic(self, z):
+        return ((np.exp(z) - np.exp(-z)) / (np.exp(z) + np.exp(-z)))
+
+    def grad_basic(self, z):
+        return (4.0 / ((np.exp(z) + np.exp(-z) ** 2)))
 
 class Softmax(ABC):
     def __init__(self):
