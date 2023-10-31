@@ -199,14 +199,17 @@ def test_module_parameter_register():
             # out = X @ self.weight.parameter + self.bias.parameter
             out = self.linear_layer_1(X)
             out = self.sigmoid_1(out)
+            print(type(out))
             self._graph.append([self.linear_layer_1, self.sigmoid_1])
 
             out = self.linear_layer_2(out)
             out = self.sigmoid_2(out)
+            print(type(out))
             self._graph.append([self.linear_layer_2, self.sigmoid_2])
 
             out = self.linear_layer_3(out)
             out = self.sigmoid_3(out)
+            print(type(out))
             self._graph.append([self.linear_layer_3, self.sigmoid_3])
             return out
 
@@ -222,12 +225,12 @@ def test_module_parameter_register():
     for m in modules.keys():
         m_param = modules[m]._parameters
         for p in m_param.keys():
-            print(p, id(m_param[p]), m_param[p].shape)
+            print(p, id(m_param[p]), type(m_param[p]), m_param[p].shape)
     print("---------------------------")
 
     all_param = test_module._parameters
     for p in all_param.keys():
-        print(p, id(all_param[p]), all_param[p].shape)
+        print(p, id(all_param[p]), type(all_param[p]), all_param[p].shape)
     print("---------------------------")
 
     print("graph", test_module._graph)
@@ -239,6 +242,42 @@ def test_module_parameter_register():
 
     test_module.backward(Y, Y_actual, loss_function)
 
+def test_conv2d_forward_backward():
+    in_channels = 3
+    out_channels = 8
+    kernel_size = (3, 5)
+    stride = 5
+    padding = None
+    conv2d = ConvolutionalLayer2D(in_channels=in_channels, 
+                                out_channels=out_channels, 
+                                kernel_size=kernel_size, 
+                                stride=stride, 
+                                padding=padding)
+
+    X = np.random.randint(10, size=(32, in_channels, 256, 128))
+    out_1 = conv2d(X)
+    print("out_1", out_1.shape)
+
+    for k in conv2d._parameters.keys():
+        print(k, conv2d._parameters.get(k).shape)
+
+    L_1 = out_1.sum()
+    print(f"L_1 {L_1}")
+    dLdY = np.ones_like(out_1)
+    dLdW, dLdb, dLdY, dLdZ = conv2d.backward(dLdY, None)
+    dLdW = np.sum(dLdW, axis=0)
+    dLdb = np.sum(dLdb, axis=0)
+    # 设置torch模型中的参数与我们的模型一致
+    weight = torch.tensor(conv2d._parameters.get("W"), dtype=torch.float32)
+    bias = torch.tensor(conv2d._parameters.get("b"), dtype=torch.float32)
+    out_2, grads = test_torch_COV2D(X, in_channels, out_channels, kernel_size, stride, padding, weight, bias)
+    # Forward
+    assert_almost_equal(actual=out_1, desired=out_2.detach().numpy(), decimal=4)
+    # Backward
+    assert_almost_equal(actual=dLdY, desired=grads["X"].detach().numpy(), decimal=4)
+    assert_almost_equal(actual=dLdZ, desired=grads["Z"].detach().numpy(), decimal=4)
+    assert_almost_equal(actual=dLdW, desired=grads["conv2d.weight"].detach().numpy(), decimal=4)
+    assert_almost_equal(actual=dLdb, desired=grads["conv2d.bias"].detach().numpy(), decimal=4)
 
 if __name__ == '__main__':
     # test_softmax()
@@ -248,6 +287,7 @@ if __name__ == '__main__':
     # test_non_linear_layer_backward()
     # test_fully_connected_network()
     # test_gradient_descent()
-    test_module_parameter_register()
+    # test_module_parameter_register()
+    test_conv2d_forward_backward()
 
 

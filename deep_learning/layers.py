@@ -161,44 +161,51 @@ class ConvolutionalLayer2D(ModuleBase):
 
 
     def backward(self, dLdY, act_func=None):
-        return
+        X = self.X
+        Z = self.Z
+        # 计算当前卷积层输出Feature Map大小
+        batch, channel, height, width = X.shape
+        kernel_size = self._hyperparameters.get("kernel_size")
+        stride = self._hyperparameters.get("stride")
+
+        out_x = int((width - kernel_size[1]) / stride) + 1  # 多少列
+        out_y = int((height - kernel_size[0]) / stride) + 1 # 多少行
+        out_channel = self._hyperparameters.get("out_channel")
+
+        # 如果当前卷积层后未接激活函数，则返回单位函数
+        if act_func is None:
+            act_func = Identity()
+
+        # 将dLdY排列成当前卷积层输出的Feature Map形状
+        # Case 1，后一层也是卷积层，则dLdY的尺寸应该与当前层输出尺寸一致
+        # Case 2，后一层是全连接层，则dLdY会被拉成向量，需要重新排列成当前层输出尺寸
+        dLdY = dLdY.reshape(batch, out_channel, out_y, out_x)
+
+        # 计算梯度
+        dY = []
+        dZ = []
+        dW = []
+        db = []
+        for ba in range(batch):
+            dLdZ = dLdY[ba, :, :, :] * act_func.grad(Z[ba, :, :, :])
+            dZ.append(dLdZ)
+            dLdW = np.zeros_like(self._parameters.get("W"), dtype=np.float32)
+            dLdY_previous_layer = np.zeros_like(X[ba, :, :, :], dtype=np.float32)
+            for dx in range(out_x):
+                for dy in range(out_y):
+                    yy = dy * stride
+                    xx = dx * stride
+                    x = X[ba, :, yy:yy+kernel_size[0], xx:xx+kernel_size[1]]
+                    dLdW = dLdW + x
+
+                    kernel = self._parameters.get("W")
+                    for c in range(out_channel):
+                        dLdY_previous_layer[:, yy:yy+kernel_size[0], xx:xx+kernel_size[1]] += (dLdZ[c, dy, dx] * kernel[c, :, :, :])
+            dLdb = np.ones_like(self._parameters.get("b"), dtype=np.float32) * (out_x * out_y)
+            dW.append(dLdW)
+            db.append(dLdb)
+            dY.append(dLdY_previous_layer)
+
+        return np.array(dW), np.array(db), np.array(dY), np.array(dZ)
 
 
-in_channels = 3
-out_channels = 8
-kernel_size = (3, 5)
-stride = 4
-padding = None
-conv2d = ConvolutionalLayer2D(in_channels=in_channels, 
-                              out_channels=out_channels, 
-                              kernel_size=kernel_size, 
-                              stride=stride, 
-                              padding=padding)
-
-X = np.random.randint(10, size=(32, in_channels, 128, 256))
-out_1 = conv2d(X)
-print(out_1.shape)
-
-for k in conv2d._parameters.keys():
-    print(k, conv2d._parameters.get(k).shape)
-
-weight = torch.tensor(conv2d._parameters.get("W"), dtype=torch.float32)
-bias = torch.tensor(conv2d._parameters.get("b"), dtype=torch.float32)
-
-class TorchConv2D(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride, padding, weight, bias):
-        super().__init__()
-        self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride)
-
-        self.conv2d.weight.data = weight
-        self.conv2d.bias.data = bias
-
-    def forward(self, X):
-        out = self.conv2d(X)
-        return out
-
-torch_conv2d = TorchConv2D(in_channels, out_channels, kernel_size, stride, padding, weight, bias)
-out_2 = torch_conv2d(torch.tensor(X, dtype=torch.float32))
-print(out_2.shape)
-
-assert_almost_equal(actual=out_1, desired=out_2.detach().numpy(), decimal=4)

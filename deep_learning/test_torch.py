@@ -87,4 +87,58 @@ def fully_connected_network_backward_torch():
     return grads["dLdW1"], grads["dLdW2"], grads["dLdW3"], grads["dLdB1"], grads["dLdB2"], grads["dLdB3"]
 
 
+def test_torch_COV2D(X, in_channels, out_channels, kernel_size, stride, padding, weight, bias):
+    class TorchConv2D(nn.Module):
+        def __init__(self, in_channels, out_channels, kernel_size, stride, padding, weight, bias):
+            super().__init__()
+            self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride)
+
+            self.conv2d.weight.data = weight
+            self.conv2d.bias.data = bias
+
+        def forward(self, X):
+            out = self.conv2d(X)
+            return out
+
+    torch_conv2d = TorchConv2D(in_channels, out_channels, kernel_size, stride, padding, weight, bias)
+    X_2 = torch.tensor(X, dtype=torch.float32, requires_grad=True)
+    out_2 = torch_conv2d(X_2)
+    out_2.retain_grad()
+    print("out_2", out_2.shape)
+    L_2 = out_2.sum()
+    L_2.retain_grad()
+    print(L_2)
+
+    L_2.backward()
+    grads = {}
+    grads["X"] = X_2.grad
+    grads["Z"] = out_2.grad
+    for n, v in torch_conv2d.named_parameters():
+        grads[n] = v.grad
+    print(grads.keys())
+
+    return out_2, grads
+
+
 # non_linear_layer_backward_torch()
+
+# class TestModule(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+#         self.l1 = nn.Linear(3, 4)
+#         self.l2 = nn.Linear(4, 3)
+
+#         self.weight = nn.Parameter(torch.tensor(np.random.randint(10, size=(3, 4)), dtype=torch.float32))
+#         self.bias = nn.Parameter(torch.tensor(np.random.randint(10, size=(4, 1)), dtype=torch.float32))
+
+#     def forward(self):
+#         self.Z = self.weight @ self.bias
+#         print(type(self.weight))
+#         print(type(self.bias))
+#         print(type(self.weight @ self.bias))
+#         print(type(self.Z))
+#         return self.Z
+
+# test_module = TestModule()
+# test_module()
+# print(test_module.state_dict())
